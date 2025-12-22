@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import logger from '../logger.js';
-import { listItineraries, listSavedPlaces, savePlace, deletePlace, getProfileStats, getSettings, updateSettings } from '../../services/user.js';
+import { listItineraries, listSavedPlaces, savePlace, deletePlace, getProfileStats, getSettings, updateSettings, updateProfile } from '../../services/user.js';
 
 const router = Router();
 
@@ -55,6 +55,17 @@ router.get('/profile', async (req, res) => {
   } catch (e) {
     logger.error(e.message);
     res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+router.post('/profile', async (req, res) => {
+  try {
+    const userId = req.body.userId || null;
+    const profile = await updateProfile(userId, req.body);
+    res.json(profile);
+  } catch (e) {
+    logger.error(e.message);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

@@ -133,13 +133,47 @@ export default function ItineraryBuilder() {
           const f = foodFilter.toLowerCase();
           return cats.includes(f) || name.includes(f);
         }
+        // Preferences: Cuisines
+        const selectedCuisines = (preferences?.cuisines || []);
+        if (selectedCuisines.length > 0) {
+          const cats = (p.categories || []).join(' ').toLowerCase();
+          const name = p.name.toLowerCase();
+          const keywords = selectedCuisines.map(id => {
+            if (id === 'south_indian') return 'south indian';
+            if (id === 'north_indian') return 'north indian';
+            if (id === 'italian') return 'italian';
+            if (id === 'chinese') return 'chinese';
+            if (id === 'authentic') return 'authentic';
+            if (id === 'continental') return 'continental';
+            return id.replace(/_/g, ' ').toLowerCase();
+          });
+          const matchCuisine = keywords.some(k => cats.includes(k) || name.includes(k));
+          if (!matchCuisine) return false;
+        }
+        // Preferences: Dietary
+        const dietary = String(preferences?.dietary || '').toLowerCase();
+        if (dietary === 'veg') {
+          const cats = (p.categories || []).join(' ').toLowerCase();
+          const name = p.name.toLowerCase();
+          const isVeg = cats.includes('veg') || cats.includes('vegetarian') || name.includes('veg') || name.includes('vegetarian');
+          if (!isVeg) return false;
+        }
         return true;
       });
     }
 
     // Filter Attractions by Opening Hours (Dynamic Refresh)
     if (type === 'attraction') {
-      filtered = filtered.filter(p => isPlaceOpen(p, currentTime));
+      filtered = filtered.filter(p => {
+        if (!isPlaceOpen(p, currentTime)) return false;
+        const heritage = Boolean(preferences?.heritageVibe);
+        if (heritage) {
+          const cats = (p.categories || []).join(' ').toLowerCase() + ' ' + String(p.category || '').toLowerCase() + ' ' + String(p.name || '').toLowerCase();
+          const vibeMatch = ['historic', 'heritage', 'museum', 'temple', 'landmark', 'authentic'].some(k => cats.includes(k));
+          if (!vibeMatch) return false;
+        }
+        return true;
+      });
     }
 
     if (!currentLoc) return filtered;

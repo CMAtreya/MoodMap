@@ -9,14 +9,12 @@ import { haversineKm } from '../utils/geo.js';
 import { motion } from 'framer-motion';
 import { Star, Clock, MapPin, Navigation, Share2, Bookmark } from 'lucide-react';
 
-const icon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+const createIcon = (color, label) => new L.DivIcon({
+  className: 'custom-div-icon',
+  html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px;">${label}</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16]
 });
 
 export default function ItineraryResult() {
@@ -189,7 +187,7 @@ export default function ItineraryResult() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
               {it.stops.map(s => (
-                <Marker key={s.order} position={[s.lat, s.lng]} icon={icon} />
+                <Marker key={s.order} position={[s.lat, s.lng]} icon={createIcon('#3b82f6', s.order)} />
               ))}
               <Polyline positions={positions} color="#3b82f6" weight={4} opacity={0.7} />
             </MapContainer>

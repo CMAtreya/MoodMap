@@ -25,8 +25,13 @@ export async function generateItinerary(input) {
 
     // Generate queries based on preferences
     const cuisine = (preferences.cuisines || []).join(' ') || '';
-    const vibe = preferences.heritage ? 'historic authentic' : '';
-    const diet = preferences.diet === 'Veg' ? 'vegetarian' : '';
+    const vibe = (preferences.heritage || preferences.heritageVibe) ? 'historic authentic' : '';
+    const diet = (() => {
+      const d = preferences.diet || preferences.dietary || '';
+      const dl = String(d).toLowerCase();
+      if (dl.includes('veg')) return 'vegetarian';
+      return '';
+    })();
     
     // Construct search queries
     const foodQuery = [cuisine, diet, vibe, 'food'].filter(Boolean).join(' ');

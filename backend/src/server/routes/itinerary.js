@@ -27,7 +27,8 @@ const GenerateSchema = z.object({
     dietary: z.string().optional(),
     heritageVibe: z.boolean().optional()
   }).optional(),
-  userId: z.string().optional()
+  userId: z.string().optional(),
+  refresh: z.boolean().optional()
 });
 
 router.post('/generate', async (req, res) => {

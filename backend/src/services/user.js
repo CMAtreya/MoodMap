@@ -83,3 +83,12 @@ export async function updateSettings(userId, payload) {
   }).select().single();
   return data;
 }
+
+export async function updateProfile(userId, payload) {
+  const supabase = client();
+  if (!supabase) return payload;
+  const { data } = await supabase.from('users').update({
+    name: payload.name,
+  }).eq('id', userId).select().single();
+  return data;
+}

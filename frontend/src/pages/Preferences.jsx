@@ -38,21 +38,23 @@ export default function Preferences() {
     setPreferences({
       cuisines: selectedCuisines,
       dietary,
-      heritageVibe
+      heritageVibe,
+      diet: dietary === 'veg' ? 'Veg' : dietary === 'non_veg' ? 'Non-Veg' : 'Any',
+      heritage: !!heritageVibe
     });
     nav('/generating');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 pt-24 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 pb-24 pt-24 px-4">
+      <div className="max-w-2xl mx-auto space-y-10">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900">Customize Your {mood} Trip</h1>
-          <p className="text-slate-500 mt-2">Tell us what you love so we can personalize your journey.</p>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Customize Your {mood} Trip</h1>
+          <p className="text-slate-600 mt-3">Pick your vibe and flavors for a tailored journey.</p>
         </div>
 
         {/* Cuisines */}
-        <section className="bg-white p-6 rounded-2xl shadow-sm border">
+        <section className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-lg border border-slate-100">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Utensils size={20} className="text-orange-500" />
             Cuisine Preferences
@@ -62,14 +64,14 @@ export default function Preferences() {
               <button
                 key={c.id}
                 onClick={() => toggleCuisine(c.id)}
-                className={`p-3 rounded-xl border text-left transition-all flex items-center gap-2 ${
+                className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-2 ${
                   selectedCuisines.includes(c.id)
-                    ? 'bg-orange-50 border-orange-200 ring-1 ring-orange-200'
+                    ? 'bg-orange-50 border-orange-200 ring-2 ring-orange-200 shadow-sm'
                     : 'hover:bg-slate-50 border-slate-200'
                 }`}
               >
-                <span className="text-xl">{c.icon}</span>
-                <span className={`text-sm font-medium ${selectedCuisines.includes(c.id) ? 'text-orange-800' : 'text-slate-600'}`}>
+                <span className="text-2xl">{c.icon}</span>
+                <span className={`text-sm font-semibold ${selectedCuisines.includes(c.id) ? 'text-orange-800' : 'text-slate-700'}`}>
                   {c.label}
                 </span>
                 {selectedCuisines.includes(c.id) && <Check size={16} className="ml-auto text-orange-600" />}
@@ -80,7 +82,7 @@ export default function Preferences() {
 
         {/* Dietary & Vibe */}
         <div className="grid md:grid-cols-2 gap-6">
-          <section className="bg-white p-6 rounded-2xl shadow-sm border">
+          <section className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-lg border border-slate-100">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Leaf size={20} className="text-green-500" />
               Dietary
@@ -90,14 +92,14 @@ export default function Preferences() {
                 <button
                   key={d.id}
                   onClick={() => setDietary(d.id)}
-                  className={`w-full p-3 rounded-xl border text-left transition-all flex items-center gap-2 ${
+                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center gap-2 ${
                     dietary === d.id
-                      ? 'bg-green-50 border-green-200 ring-1 ring-green-200'
+                      ? 'bg-green-50 border-green-200 ring-2 ring-green-200 shadow-sm'
                       : 'hover:bg-slate-50 border-slate-200'
                   }`}
                 >
-                  <span className="text-xl">{d.icon}</span>
-                  <span className={`text-sm font-medium ${dietary === d.id ? 'text-green-800' : 'text-slate-600'}`}>
+                  <span className="text-2xl">{d.icon}</span>
+                  <span className={`text-sm font-semibold ${dietary === d.id ? 'text-green-800' : 'text-slate-700'}`}>
                     {d.label}
                   </span>
                   {dietary === d.id && <Check size={16} className="ml-auto text-green-600" />}
@@ -106,25 +108,25 @@ export default function Preferences() {
             </div>
           </section>
 
-          <section className="bg-white p-6 rounded-2xl shadow-sm border">
+          <section className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-lg border border-slate-100">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <History size={20} className="text-purple-500" />
               Vibe Check
             </h2>
             <div 
               onClick={() => setHeritageVibe(!heritageVibe)}
-              className={`cursor-pointer p-4 rounded-xl border transition-all h-full flex flex-col justify-center items-center text-center gap-3 ${
+              className={`cursor-pointer p-5 rounded-2xl border transition-all h-full flex flex-col justify-center items-center text-center gap-3 ${
                 heritageVibe
-                  ? 'bg-purple-50 border-purple-200 ring-1 ring-purple-200'
+                  ? 'bg-purple-50 border-purple-200 ring-2 ring-purple-200 shadow-sm'
                   : 'hover:bg-slate-50 border-slate-200'
               }`}
             >
-              <div className="p-3 bg-white rounded-full shadow-sm">
-                <span className="text-2xl">🏛️</span>
+              <div className="p-4 bg-white rounded-full shadow-sm">
+                <span className="text-3xl">🏛️</span>
               </div>
               <div>
                 <div className={`font-semibold ${heritageVibe ? 'text-purple-900' : 'text-slate-900'}`}>Heritage & Authentic</div>
-                <div className="text-xs text-slate-500 mt-1">Prioritize historic places and old-school legendary eateries.</div>
+                <div className="text-xs text-slate-600 mt-1">Prioritize historic places and old-school legendary eateries.</div>
               </div>
               {heritageVibe && <div className="text-xs font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Selected</div>}
             </div>
@@ -133,7 +135,7 @@ export default function Preferences() {
 
         <button
           onClick={handleNext}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-lg shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2"
+          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-3xl font-semibold text-lg shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-2"
         >
           Generate My Itinerary <ArrowRight />
         </button>

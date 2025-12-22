@@ -40,14 +40,14 @@ export default function TimeSelection() {
     : '';
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 bg-gradient-to-br from-indigo-50 via-white to-rose-50">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-4xl glass-panel p-8 md:p-12 rounded-[2.5rem]"
       >
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900">How much time do you have?</h2>
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">How much time do you have?</h2>
           
           <div className="mt-6 flex flex-col items-center gap-3">
             <div className="text-sm font-medium text-slate-600">Start Time</div>
@@ -82,7 +82,7 @@ export default function TimeSelection() {
               <button
                 key={p.label}
                 onClick={() => setTime(p.hours)}
-                className={`relative group p-6 rounded-2xl border transition-all duration-300 ${isSelected ? 'bg-blue-600 border-blue-600 text-white shadow-xl scale-[1.02]' : 'bg-white/50 border-white/40 hover:bg-white text-slate-600 hover:shadow-md'}`}
+                className={`relative group p-6 rounded-2xl border transition-all duration-300 ${isSelected ? 'bg-blue-600 border-blue-600 text-white shadow-xl scale-[1.02]' : 'bg-white/70 border-white/40 hover:bg-white text-slate-600 hover:shadow-md'}`}
               >
                 <div className="flex flex-col items-center gap-3">
                   <Icon size={24} className={isSelected ? 'text-white' : 'text-slate-400 group-hover:text-blue-500 transition-colors'} />
@@ -121,7 +121,7 @@ export default function TimeSelection() {
           <button
             onClick={() => nav('/preferences')}
             disabled={!mood}
-            className="apple-btn-primary px-12 py-4 text-lg shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="apple-btn-primary px-12 py-4 text-lg shadow-xl hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next: Preferences
           </button>

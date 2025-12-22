@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMoodMap } from '../state/store.js';
+import { motion } from 'framer-motion';
 
 const moods = [
   { label: 'Curious', emoji: '🧠', color: 'bg-indigo-100' },
@@ -17,19 +18,25 @@ export default function MoodSelection() {
   const setMood = useMoodMap(s => s.setMood);
   return (
     <div className="mx-auto max-w-5xl px-4">
-      <h2 className="text-2xl font-semibold mt-6">How are you feeling today?</h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
+      <h2 className="text-3xl font-bold mt-8 text-slate-900">How are you feeling today?</h2>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mt-6"
+      >
         {moods.map(m => (
-          <button
+          <motion.button
             key={m.label}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => { setMood(m.label); nav('/time-window'); }}
-            className={`p-6 rounded-xl ${m.color} hover:shadow`}
+            className={`p-6 rounded-2xl ${m.color} hover:shadow-md transition-all`}
           >
-            <div className="text-4xl">{m.emoji}</div>
-            <div className="mt-2 font-medium">{m.label}</div>
-          </button>
+            <div className="text-5xl">{m.emoji}</div>
+            <div className="mt-2 font-semibold text-slate-800">{m.label}</div>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
