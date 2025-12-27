@@ -61,7 +61,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/" element={<Home />} />
-            
+
             {/* Itinerary Creation Flow */}
             <Route element={<ProtectedRoute />}>
               <Route path="/mood" element={<MoodSelection />} />
@@ -73,7 +73,7 @@ function App() {
               <Route path="/itinerary-final" element={<ItineraryFinal />} />
               <Route path="/trip/:id/live" element={<LiveTrip />} />
               <Route path="/trip/:id/complete" element={<TripComplete />} />
-              
+
               {/* User Profile & Settings */}
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/edit" element={<CreateProfile />} />
@@ -81,7 +81,7 @@ function App() {
               <Route path="/saved-itineraries" element={<SavedItineraries />} />
               <Route path="/saved-places" element={<SavedPlaces />} />
             </Route>
-            
+
             {/* 404 route */}
             <Route path="*" element={<NotFound />} />
           </Routes>

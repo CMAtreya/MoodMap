@@ -15,7 +15,7 @@ export async function generateItinerary(input) {
     const preferences = input.preferences || {};
     // Include preferences and refresh flag in cache key
     const key = `it:${input.mood}:${input.start.lat.toFixed(3)}:${input.start.lng.toFixed(3)}:${input.timeWindowHours}:${Math.floor(input.start.timestamp / (15 * 60 * 1000))}:${JSON.stringify(preferences)}`;
-    
+
     // If refresh is requested, skip cache check
     const cached = cache.get(key);
     if (cached && !input.refresh) return cached;
@@ -32,7 +32,7 @@ export async function generateItinerary(input) {
       if (dl.includes('veg')) return 'vegetarian';
       return '';
     })();
-    
+
     // Construct search queries
     const foodQuery = [cuisine, diet, vibe, 'food'].filter(Boolean).join(' ');
     const attrQuery = [vibe, 'tourist attraction'].filter(Boolean).join(' ');
@@ -41,27 +41,27 @@ export async function generateItinerary(input) {
     const secondaryPromise = process.env.GOOGLE_PLACES_API_KEY
       ? getGooglePlaces(input.start.lat, input.start.lng, 20000, attrQuery)
       : getOpenTripMapPlaces(input.start.lat, input.start.lng);
-      
+
     const results = await Promise.allSettled([primaryPromise, secondaryPromise]);
     const primary = results[0].status === 'fulfilled' ? results[0].value : [];
     const secondary = results[1].status === 'fulfilled' ? results[1].value : [];
-    
+
     // If primary (food) results are low, try a broader search
     let extraFood = [];
     if (primary.length < 5) {
-       try {
-         const broad = await getFoursquarePlaces(input.start.lat, input.start.lng, 20000, 'restaurant');
-         extraFood = broad;
-       } catch {}
+      try {
+        const broad = await getFoursquarePlaces(input.start.lat, input.start.lng, 20000, 'restaurant');
+        extraFood = broad;
+      } catch { }
     }
 
     const merged = dedupeByProximity(enrichOpeningHours([...primary, ...extraFood, ...secondary]));
-    
+
     // Categorize into Food and Attractions
     const foodKeywords = ['cafe', 'restaurant', 'bakery', 'bar', 'coffee', 'diner', 'bistro', 'pub', 'food', 'breakfast', 'lunch', 'dinner'];
     const attractions = [];
     const food = [];
-    
+
     merged.forEach(p => {
       const cats = (p.categories || []).map(c => c.toLowerCase());
       const isFood = cats.some(c => foodKeywords.some(k => c.includes(k)));
@@ -77,22 +77,22 @@ export async function generateItinerary(input) {
         { id: 'mock-a3', name: 'Historic Square', lat: input.start.lat + 0.002, lng: input.start.lng - 0.005, categories: ['Landmark'], rating: 4.4, reviews: 500 }
       );
     }
-    
+
     // Add Specific Local Gems if nearby (simulated via distance check or just adding to pool)
     // We add them to the pool regardless; the distance filter later will catch them if they are truly relevant/close.
     // Or better, we explicitly check if we are in Mysuru/Bangalore region to add them.
     // Mysuru approx: 12.3, 76.6. Bangalore: 12.9, 77.6
     const isKarnataka = (input.start.lat > 12 && input.start.lat < 13.5 && input.start.lng > 76 && input.start.lng < 78);
-    
+
     if (isKarnataka || food.length < 5) {
-       if (isKarnataka) {
-         food.push(
-           { id: 'mylari', name: 'Original Vinayaka Mylari', lat: 12.3020, lng: 76.6530, categories: ['Authentic', 'Breakfast', 'Veg'], rating: 4.8, reviews: 3500, description: 'Legendary dosa place known for its soft benne dosas.' },
-           { id: 'sapa', name: 'Sapa Bakery', lat: 12.3150, lng: 76.6400, categories: ['Bakery', 'Cafe', 'Authentic'], rating: 4.9, reviews: 1200, description: 'Famous for authentic sourdough and pastries.' },
-           { id: 'glens', name: 'Glen\'s Bakehouse', lat: 12.9700, lng: 77.6000, categories: ['Bakery', 'Cafe'], rating: 4.5, reviews: 2000 }
-         );
-       }
-       food.push(
+      if (isKarnataka) {
+        food.push(
+          { id: 'mylari', name: 'Original Vinayaka Mylari', lat: 12.3020, lng: 76.6530, categories: ['Authentic', 'Breakfast', 'Veg'], rating: 4.8, reviews: 3500, description: 'Legendary dosa place known for its soft benne dosas.' },
+          { id: 'sapa', name: 'Sapa Bakery', lat: 12.3150, lng: 76.6400, categories: ['Bakery', 'Cafe', 'Authentic'], rating: 4.9, reviews: 1200, description: 'Famous for authentic sourdough and pastries.' },
+          { id: 'glens', name: 'Glen\'s Bakehouse', lat: 12.9700, lng: 77.6000, categories: ['Bakery', 'Cafe'], rating: 4.5, reviews: 2000 }
+        );
+      }
+      food.push(
         { id: 'mock-f1', name: 'The Daily Grind', lat: input.start.lat + 0.001, lng: input.start.lng + 0.004, categories: ['Cafe'], rating: 4.6, reviews: 300 },
         { id: 'mock-f2', name: 'Burger Joint', lat: input.start.lat - 0.003, lng: input.start.lng + 0.001, categories: ['Restaurant'], rating: 4.3, reviews: 900 },
         { id: 'mock-f3', name: 'Sweet Treats', lat: input.start.lat + 0.004, lng: input.start.lng - 0.002, categories: ['Bakery'], rating: 4.8, reviews: 450 }
@@ -105,21 +105,21 @@ export async function generateItinerary(input) {
     }));
     let candidate = filteredMood.length >= 3 ? filteredMood : merged.map(p => ({ ...p, moodScore: 0.3 }));
     if (candidate.length < 3) {
-    candidate = [
-      { id: 'start-walk', name: 'Scenic Walk', lat: input.start.lat + 0.003, lng: input.start.lng + 0.003, categories: ['Outdoor'], rating: 4.8, reviews: 1200 },
-      { id: 'coffee-break', name: 'Coffee Break', lat: input.start.lat - 0.002, lng: input.start.lng - 0.001, categories: ['Cafe'], rating: 4.7, reviews: 2500 },
-      { id: 'viewpoint', name: 'City Viewpoint', lat: input.start.lat + 0.001, lng: input.start.lng - 0.003, categories: ['Scenic'], rating: 4.9, reviews: 3200 }
-    ];
-  }
-  const openWindow = candidate.filter(p => isOpenDuringWindow(p, startTs, endTs));
-  let quality = openWindow.map(p => ({
-    ...p,
-    quality: (p.rating || 0) * Math.log(Math.max(1, p.reviews || 1))
-  })).filter(p => (p.rating || 0) >= 4.3 && (p.reviews || 0) >= 1000);
-  if (quality.length < 3) {
-    // If strict filtering removes too many, fall back to relaxed or original set but prioritize high ratings
-    quality = openWindow.map(p => ({ ...p, quality: (p.rating || 0) * Math.log(Math.max(1, p.reviews || 1)) }));
-  }
+      candidate = [
+        { id: 'start-walk', name: 'Scenic Walk', lat: input.start.lat + 0.003, lng: input.start.lng + 0.003, categories: ['Outdoor'], rating: 4.8, reviews: 1200 },
+        { id: 'coffee-break', name: 'Coffee Break', lat: input.start.lat - 0.002, lng: input.start.lng - 0.001, categories: ['Cafe'], rating: 4.7, reviews: 2500 },
+        { id: 'viewpoint', name: 'City Viewpoint', lat: input.start.lat + 0.001, lng: input.start.lng - 0.003, categories: ['Scenic'], rating: 4.9, reviews: 3200 }
+      ];
+    }
+    const openWindow = candidate.filter(p => isOpenDuringWindow(p, startTs, endTs));
+    let quality = openWindow.map(p => ({
+      ...p,
+      quality: (p.rating || 0) * Math.log(Math.max(1, p.reviews || 1))
+    })).filter(p => (p.rating || 0) >= 4.3 && (p.reviews || 0) >= 1000);
+    if (quality.length < 3) {
+      // If strict filtering removes too many, fall back to relaxed or original set but prioritize high ratings
+      quality = openWindow.map(p => ({ ...p, quality: (p.rating || 0) * Math.log(Math.max(1, p.reviews || 1)) }));
+    }
     quality.sort((a, b) => (b.quality || 0) - (a.quality || 0));
     const top15 = quality.slice(0, 15).map(p => ({
       ...p,
@@ -128,79 +128,79 @@ export async function generateItinerary(input) {
     const userContext = { startLat: input.start.lat, startLng: input.start.lng, timeWindowHours: input.timeWindowHours, mood: input.mood };
     const selection = await selectPlaces(userContext, top15, preferences);
     const selectedIds = selection.selected || top15.slice(0, 4).map(p => p.id);
-  const selected = top15.filter(p => selectedIds.includes(p.id));
-  const alternatives = top15.filter(p => !selectedIds.includes(p.id)).slice(0, 5); // Return top 5 unused
-  const orderIdx = nearestNeighborOrder(selected, input.start.lat, input.start.lng, 'walking');
-  const ordered = orderIdx.map(i => selected[i]);
-  const intensity = moodConfig[input.mood].intensity;
-  const scheduled = computeSchedule(ordered, startTs, input.start.lat, input.start.lng, endTs, input.mood, intensity, 'walking');
-  const supabase = supabaseClient();
-  const crowdBias = await crowdHeuristics(supabase, scheduled.stops);
-  
-  // Generate descriptions for scheduled stops AND top pool candidates
-  // We'll combine them into one batch request to Gemini to save time/calls
-  const poolAttractions = attractions.slice(0, 10);
-  const poolFood = food.slice(0, 10);
-  const allToDescribe = [
-    ...scheduled.stops, 
-    ...poolAttractions.map(p => ({ ...p, placeId: p.id })), 
-    ...poolFood.map(p => ({ ...p, placeId: p.id }))
-  ];
-  
-  // Deduplicate based on placeId
-  const uniqueToDescribe = Array.from(new Map(allToDescribe.map(item => [item.placeId || item.id, item])).values());
-  
-  const stopDescs = await getStopDescriptions(input.mood, uniqueToDescribe, preferences);
-  const na = await getNarrativeAndTips(input.mood, scheduled, { selectionReasoning: selection.reasoning, crowdBias });
-  
-  const enrich = (p) => {
-    const d = stopDescs[p.placeId] || stopDescs[p.placeId || p.id] || { description: '', highlight: '' };
-    return {
-      ...p,
-      description: d.description || '',
-      highlight: d.highlight || ''
-    };
-  };
+    const selected = top15.filter(p => selectedIds.includes(p.id));
+    const alternatives = top15.filter(p => !selectedIds.includes(p.id)).slice(0, 5); // Return top 5 unused
+    const orderIdx = nearestNeighborOrder(selected, input.start.lat, input.start.lng, 'walking');
+    const ordered = orderIdx.map(i => selected[i]);
+    const intensity = moodConfig[input.mood].intensity;
+    const scheduled = computeSchedule(ordered, startTs, input.start.lat, input.start.lng, endTs, input.mood, intensity, 'walking');
+    const supabase = supabaseClient();
+    const crowdBias = await crowdHeuristics(supabase, scheduled.stops);
 
-  const itinerary = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    mood: input.mood,
-    timeWindowHours: input.timeWindowHours,
-    start: input.start,
-    narrative: na.narrative,
-    tips: na.tips,
-    stops: scheduled.stops.map(s => {
-      const enriched = enrich(s);
-      return { ...s, ...enriched };
-    }),
-    alternatives: alternatives.map(p => ({
-      placeId: p.id,
-      name: p.name,
-      lat: p.lat,
-      lng: p.lng,
-      category: p.categories?.[0] || 'Point of Interest',
-      rating: p.rating,
-      reviews: p.reviews,
-      ...enrich({ ...p, placeId: p.id })
-    })),
-    pool: {
-      attractions: attractions.slice(0, 20).map(p => ({ 
-        ...p, 
-        placeId: p.id, 
-        category: p.categories?.[0] || 'Attraction',
+    // Generate descriptions for scheduled stops AND top pool candidates
+    // We'll combine them into one batch request to Gemini to save time/calls
+    const poolAttractions = attractions.slice(0, 10);
+    const poolFood = food.slice(0, 10);
+    const allToDescribe = [
+      ...scheduled.stops,
+      ...poolAttractions.map(p => ({ ...p, placeId: p.id })),
+      ...poolFood.map(p => ({ ...p, placeId: p.id }))
+    ];
+
+    // Deduplicate based on placeId
+    const uniqueToDescribe = Array.from(new Map(allToDescribe.map(item => [item.placeId || item.id, item])).values());
+
+    const stopDescs = await getStopDescriptions(input.mood, uniqueToDescribe, preferences);
+    const na = await getNarrativeAndTips(input.mood, scheduled, { selectionReasoning: selection.reasoning, crowdBias });
+
+    const enrich = (p) => {
+      const d = stopDescs[p.placeId] || stopDescs[p.placeId || p.id] || { description: '', highlight: '' };
+      return {
+        ...p,
+        description: d.description || '',
+        highlight: d.highlight || ''
+      };
+    };
+
+    const itinerary = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      mood: input.mood,
+      timeWindowHours: input.timeWindowHours,
+      start: input.start,
+      narrative: na.narrative,
+      tips: na.tips,
+      stops: scheduled.stops.map(s => {
+        const enriched = enrich(s);
+        return { ...s, ...enriched };
+      }),
+      alternatives: alternatives.map(p => ({
+        placeId: p.id,
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        category: p.categories?.[0] || 'Point of Interest',
+        rating: p.rating,
+        reviews: p.reviews,
         ...enrich({ ...p, placeId: p.id })
       })),
-      food: food.slice(0, 20).map(p => ({ 
-        ...p, 
-        placeId: p.id, 
-        category: p.categories?.[0] || 'Food',
-        ...enrich({ ...p, placeId: p.id })
-      }))
-    },
-    summary: { ...scheduled.summary, bounds: computeBounds([input.start, ...scheduled.stops]) }
-  };
-  cache.set(key, itinerary);
-  return itinerary;
+      pool: {
+        attractions: attractions.slice(0, 20).map(p => ({
+          ...p,
+          placeId: p.id,
+          category: p.categories?.[0] || 'Attraction',
+          ...enrich({ ...p, placeId: p.id })
+        })),
+        food: food.slice(0, 20).map(p => ({
+          ...p,
+          placeId: p.id,
+          category: p.categories?.[0] || 'Food',
+          ...enrich({ ...p, placeId: p.id })
+        }))
+      },
+      summary: { ...scheduled.summary, bounds: computeBounds([input.start, ...scheduled.stops]) }
+    };
+    cache.set(key, itinerary);
+    return itinerary;
   } catch {
     const start = new Date(input.start.timestamp);
     const fmt = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -231,19 +231,105 @@ export async function generateItinerary(input) {
       ],
       pool: {
         attractions: [
-           { placeId: 'f1', name: 'Grand Museum', lat: input.start.lat + 0.005, lng: input.start.lng, category: 'Museum', rating: 4.7 },
-           { placeId: 'f2', name: 'Central Park', lat: input.start.lat - 0.005, lng: input.start.lng + 0.002, category: 'Park', rating: 4.8 },
-           { placeId: 'f3', name: 'City Tower', lat: input.start.lat + 0.002, lng: input.start.lng - 0.005, category: 'Landmark', rating: 4.6 }
+          { placeId: 'f1', name: 'Grand Museum', lat: input.start.lat + 0.005, lng: input.start.lng, category: 'Museum', rating: 4.7 },
+          { placeId: 'f2', name: 'Central Park', lat: input.start.lat - 0.005, lng: input.start.lng + 0.002, category: 'Park', rating: 4.8 },
+          { placeId: 'f3', name: 'City Tower', lat: input.start.lat + 0.002, lng: input.start.lng - 0.005, category: 'Landmark', rating: 4.6 }
         ],
         food: [
-           { placeId: 'a1', name: 'Joe\'s Pizza', lat: input.start.lat + 0.001, lng: input.start.lng + 0.001, category: 'Pizza', rating: 4.5 },
-           { placeId: 'a2', name: 'Starbucks Reserve', lat: input.start.lat - 0.001, lng: input.start.lng - 0.001, category: 'Cafe', rating: 4.4 },
-           { placeId: 'a3', name: 'Sushi Zen', lat: input.start.lat + 0.003, lng: input.start.lng - 0.002, category: 'Japanese', rating: 4.8 }
+          { placeId: 'a1', name: 'Joe\'s Pizza', lat: input.start.lat + 0.001, lng: input.start.lng + 0.001, category: 'Pizza', rating: 4.5 },
+          { placeId: 'a2', name: 'Starbucks Reserve', lat: input.start.lat - 0.001, lng: input.start.lng - 0.001, category: 'Cafe', rating: 4.4 },
+          { placeId: 'a3', name: 'Sushi Zen', lat: input.start.lat + 0.003, lng: input.start.lng - 0.002, category: 'Japanese', rating: 4.8 }
         ]
       },
       summary: { totalDurationMinutes: 170, totalDistanceKm: 4.5, stopCount: 3, bounds: computeBounds([{ lat: input.start.lat, lng: input.start.lng }, { lat: input.start.lat + 0.003, lng: input.start.lng + 0.003 }, { lat: input.start.lat - 0.002, lng: input.start.lng - 0.001 }, { lat: input.start.lat + 0.001, lng: input.start.lng - 0.003 }]) }
     };
     return fallback;
+  }
+}
+
+export async function getFoodRecommendations(lat, lng) {
+  try {
+    // 1. Fetch places (0km / immediate vicinity context -> we use a small radius but enough to get results, e.g. 2km)
+    // "0km" usually implies "nearby".
+    const radius = 2000;
+
+    const primaryPromise = getFoursquarePlaces(lat, lng, radius, 'food');
+    const secondaryPromise = process.env.GOOGLE_PLACES_API_KEY
+      ? getGooglePlaces(lat, lng, radius, 'restaurant')
+      : Promise.resolve([]);
+
+    const results = await Promise.allSettled([primaryPromise, secondaryPromise]);
+    const primary = results[0].status === 'fulfilled' ? results[0].value : [];
+    const secondary = results[1].status === 'fulfilled' ? results[1].value : [];
+
+    // Dedupe
+    const merged = dedupeByProximity(enrichOpeningHours([...primary, ...secondary]));
+
+    // Categorize
+    const categorized = {
+      breakfast: [],
+      lunch: [],
+      dinner: []
+    };
+
+    const terms = {
+      breakfast: ['cat_breakfast', 'bakery', 'cafe', 'coffee', 'bagel', 'donut', 'pancake'],
+      lunch: ['burger', 'sandwich', 'salad', 'deli', 'pizza', 'fast food'],
+      dinner: ['steak', 'seafood', 'pasta', 'wine', 'bar', 'fine dining', 'asian', 'italian', 'mexican']
+    };
+
+    merged.forEach(p => {
+      const cats = (p.categories || []).map(c => c.toLowerCase()).join(' ');
+      const isBreakfast = terms.breakfast.some(t => cats.includes(t));
+      const isLunch = terms.lunch.some(t => cats.includes(t));
+      const isDinner = terms.dinner.some(t => cats.includes(t));
+
+      // Heuristic: If it matches nothing specifically, put in Lunch & Dinner if it looks like a restaurant
+      // Or rely on hours if we had them robustly.
+
+      let added = false;
+      if (isBreakfast) { categorized.breakfast.push(p); added = true; }
+      if (isLunch) { categorized.lunch.push(p); added = true; }
+      if (isDinner) { categorized.dinner.push(p); added = true; }
+
+      if (!added) {
+        // Default bucket
+        categorized.lunch.push(p);
+        categorized.dinner.push(p);
+      }
+    });
+
+    // Travel Time Config (Simple Haversine based Walking time for "0km" context)
+    // 5km/h walking speed => 12 min/km
+    const addTravelTime = (list) => list.map(p => {
+      const distKm = haversine(lat, lng, p.lat, p.lng);
+      const walkingMins = Math.ceil(distKm * 12);
+      return { ...p, travelTimeMinutes: walkingMins, distanceKm: distKm.toFixed(2) };
+    });
+
+    return {
+      breakfast: addTravelTime(categorized.breakfast).slice(0, 10),
+      lunch: addTravelTime(categorized.lunch).slice(0, 10),
+      dinner: addTravelTime(categorized.dinner).slice(0, 10)
+    };
+
+  } catch (error) {
+    console.error("Error getting food recommendations:", error);
+    // Fallback Mock Data
+    return {
+      breakfast: [
+        { id: 'mock-b1', name: 'Sunrise Cafe', lat: lat + 0.001, lng: lng + 0.001, categories: ['Cafe'], rating: 4.5, travelTimeMinutes: 5, distanceKm: 0.2 },
+        { id: 'mock-b2', name: 'Bagel Spot', lat: lat - 0.002, lng: lng + 0.001, categories: ['Bakery'], rating: 4.3, travelTimeMinutes: 8, distanceKm: 0.5 }
+      ],
+      lunch: [
+        { id: 'mock-l1', name: 'Tasty Burger', lat: lat + 0.003, lng: lng - 0.001, categories: ['Burger'], rating: 4.6, travelTimeMinutes: 12, distanceKm: 0.8 },
+        { id: 'mock-l2', name: 'Salad Bar', lat: lat - 0.001, lng: lng - 0.002, categories: ['Healthy'], rating: 4.4, travelTimeMinutes: 6, distanceKm: 0.3 }
+      ],
+      dinner: [
+        { id: 'mock-d1', name: 'Italiano', lat: lat + 0.002, lng: lng + 0.002, categories: ['Italian'], rating: 4.7, travelTimeMinutes: 10, distanceKm: 0.6 },
+        { id: 'mock-d2', name: 'Spice Route', lat: lat - 0.002, lng: lng - 0.003, categories: ['Indian'], rating: 4.5, travelTimeMinutes: 15, distanceKm: 1.0 }
+      ]
+    };
   }
 }
 
@@ -277,7 +363,7 @@ async function crowdHeuristics(supabase, stops) {
       const max = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
       if (max && max[1] > 3) level = max[0];
     }
-    
+
     // Dynamic adjustments
     if (!supabase || (supabase && isWeekend)) {
       if (String(s.category).toLowerCase().includes('museum') && isWeekend) level = 'High';
@@ -290,10 +376,10 @@ async function crowdHeuristics(supabase, stops) {
 
     // Vinayaka Mylari special logic (famous for waiting)
     if (s.name.includes('Mylari') && hour < 11) {
-        level = 'High';
-        wait = 45;
+      level = 'High';
+      wait = 45;
     }
-    
+
     out[s.order] = { level, wait };
     // We also attach it to the stop object for easy access later if needed, though 'out' is returned
     s.crowdLevel = level;

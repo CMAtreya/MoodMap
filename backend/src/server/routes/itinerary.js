@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import logger from '../logger.js';
-import { generateItinerary } from '../../services/itinerary.js';
+import { generateItinerary, getFoodRecommendations } from '../../services/itinerary.js';
 import { saveItinerary, getItineraryById } from '../../services/persistence.js';
 
 const router = Router();
@@ -58,6 +58,21 @@ router.post('/generate', async (req, res) => {
       summary: { totalDurationMinutes: 170, totalDistanceKm: 4.5, stopCount: 3 }
     };
     res.json(fallback);
+  }
+});
+
+
+router.post('/food-recommendations', async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    if (!lat || !lng) {
+      return res.status(400).json({ error: 'lat and lng are required' });
+    }
+    const recommendations = await getFoodRecommendations(lat, lng);
+    res.json(recommendations);
+  } catch (e) {
+    logger.error(e.message);
+    res.status(500).json({ error: 'Failed to fetch food recommendations' });
   }
 });
 

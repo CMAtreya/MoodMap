@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Navigation, Clock, MapPin, Coffee, Camera, 
+import {
+  Navigation, Clock, MapPin, Coffee, Camera,
   SkipForward, AlertTriangle, CheckCircle, MoreHorizontal,
   Users, Music, Heart, Share2, Compass
 } from 'lucide-react';
@@ -11,7 +11,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import { useMoodMap } from '../state/store.js';
-import { getTripState, advanceTrip, reportCrowd, startTrip } from '../lib/trip.js';
+import { getTripState, advanceTrip, reportCrowd, startTrip, completeTrip } from '../lib/trip.js';
+import EmotionDetector from '../components/features/EmotionDetector';
 import { haversineKm } from '../utils/geo.js';
 
 // Custom Map Component to handle updates
@@ -52,7 +53,7 @@ export default function LiveTrip() {
   const [busy, setBusy] = useState(false);
   const visitedRef = useRef(new Set());
   const autoAdvanceRef = useRef(false);
-  
+
   // Load trip state
   useEffect(() => {
     let mounted = true;
@@ -74,25 +75,26 @@ export default function LiveTrip() {
       }
     }
     load();
-    
+
     // Poll for updates every 30s
     const poller = setInterval(load, 30000);
-    
+
     // Watch location
     const watch = navigator.geolocation.watchPosition(
       p => setUserPos([p.coords.latitude, p.coords.longitude]),
       e => console.error(e),
       { enableHighAccuracy: true }
     );
-    
+
     return () => {
       clearInterval(poller);
       navigator.geolocation.clearWatch(watch);
     };
   }, [id]);
 
-  // Actions
-  async function handleAction(action) {
+  const [showVibeCheck, setShowVibeCheck] = useState(false);
+
+  const performAdvance = async (action) => {
     setBusy(true);
     try {
       const newState = await advanceTrip(id, action);
@@ -104,13 +106,42 @@ export default function LiveTrip() {
       setBusy(false);
       setIsMenuOpen(false);
     }
+  };
+
+  const handleCheckOut = async () => {
+    // Instead of just advancing, we trigger a vibe check first for the "10/10" experience
+    // unless it's the last stop
+    if (state?.trip && state.trip.currentIndex < (state.all?.length || 0) - 1) {
+      setShowVibeCheck(true);
+    } else {
+      // Last stop, just finish
+      await performAdvance('checkout');
+    }
+  };
+
+  const handleVibeUpdate = async (emotion) => {
+    setShowVibeCheck(false);
+    // In a real backend, we'd send this emotion to re-rank the next stops.
+    // For now, we simulate "Adjusting route..." UI then proceed.
+    // Just map emotion to a toast or console log for prototype
+    console.log("User vibe after stop:", emotion);
+    await performAdvance('checkout');
+  };
+
+  // Actions
+  async function handleAction(action) {
+    if (action === 'checkout') {
+      await handleCheckOut();
+    } else {
+      await performAdvance(action);
+    }
   }
 
   // Derived state
   const currentStop = state?.current;
   const nextStop = state?.next;
   const allStops = state?.all || [];
-  
+
   const progress = useMemo(() => {
     if (!state?.trip) return 0;
     const total = allStops.length;
@@ -195,10 +226,10 @@ export default function LiveTrip() {
               LIVE TRIP • {Math.round(progress)}%
             </span>
           </div>
-          <a 
-            href={buildGoogleMapsRouteLink()} 
-            target="_blank" 
-            rel="noreferrer" 
+          <a
+            href={buildGoogleMapsRouteLink()}
+            target="_blank"
+            rel="noreferrer"
             className="p-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm hover:bg-white transition-all"
             title="Open route in Google Maps"
           >
@@ -209,9 +240,9 @@ export default function LiveTrip() {
 
       {/* Map Layer */}
       <div className="flex-1 w-full h-full relative z-0">
-        <MapContainer 
-          center={mapCenter} 
-          zoom={15} 
+        <MapContainer
+          center={mapCenter}
+          zoom={15}
           zoomControl={false}
           className="w-full h-full"
         >
@@ -220,11 +251,11 @@ export default function LiveTrip() {
             attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           />
           <MapUpdater center={mapCenter} />
-          
+
           {/* Route Line */}
-          <Polyline 
+          <Polyline
             positions={allStops.map(s => [s.lat, s.lng])}
-            pathOptions={{ color: '#6366f1', weight: 4, opacity: 0.6, dashArray: '10, 10' }} 
+            pathOptions={{ color: '#6366f1', weight: 4, opacity: 0.6, dashArray: '10, 10' }}
           />
 
           {/* Stops */}
@@ -232,8 +263,8 @@ export default function LiveTrip() {
             const isCurrent = currentStop?.order === stop.order;
             const isPast = idx < (state.trip.currentIndex || 0);
             return (
-              <Marker 
-                key={stop.order} 
+              <Marker
+                key={stop.order}
                 position={[stop.lat, stop.lng]}
                 icon={createIcon(isCurrent ? '#6366f1' : isPast ? '#94a3b8' : '#fbbf24', isCurrent ? 24 : 16)}
               >
@@ -280,7 +311,7 @@ export default function LiveTrip() {
                 <MapPin size={12} /> {currentStop?.category || "Destination"}
               </p>
             </div>
-            <button 
+            <button
               onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${currentStop?.lat},${currentStop?.lng}`)}
               className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95 transition-all"
             >
@@ -343,12 +374,12 @@ export default function LiveTrip() {
       <AnimatePresence>
         {isMenuOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
               className="absolute inset-0 bg-black/20 backdrop-blur-sm z-[900]"
             />
-            <motion.div 
+            <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[2rem] z-[1000] p-6 pb-10"
             >
